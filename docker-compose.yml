@@ -1,0 +1,40 @@
+# =====================================================================
+# B-Trust MIMS - Local Development Docker Compose
+# Currently runs MySQL only (DEV-6). All /init SQL scripts are mounted
+# to /docker-entrypoint-initdb.d, so on first container start against
+# an empty data volume, MySQL runs them automatically in filename
+# order: 01_schema -> 02_triggers -> 03_procedures ->
+# 04_interest_and_events -> 05_reference_data -> 06_load_sample_data ->
+# 07_generate_transactions.
+#
+# NOTE (DEV-14): this file will grow to 3 services (database, backend,
+# frontend) once the BTrust_MIMS-Backend and BTrust-MIMS-Frontend
+# codebases exist. Production hosting (Aiven/Render/Vercel, D6/D55) is
+# separate from this file and is unaffected either way.
+# =====================================================================
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: mims_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: mims_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mims_db_data:/var/lib/mysql
+      - ./init:/docker-entrypoint-initdb.d
+    command:
+      # local_infile must be ON for LOAD DATA INFILE in 06_load_sample_data.sql
+      - --local-infile=1
+      - --secure-file-priv=""
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mims_db_data:

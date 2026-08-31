@@ -1,0 +1,6 @@
+agent_id,branch_id,agent_name,agent_nic,username,password_hash
+1,1,Nimal Perera,199012345678,nimal.perera,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+2,1,Kamala Silva,198712345679,kamala.silva,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+3,2,Sunil Bandara,199212345680,sunil.bandara,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+4,2,Priya Rajapaksa,199512345681,priya.rajapaksa,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+5,3,Kumar Selvam,198912345682,kumar.selvam,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi

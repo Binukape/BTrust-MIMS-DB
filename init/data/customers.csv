@@ -1,0 +1,16 @@
+customer_id,agent_id,full_name,nic_number,address,phone,date_of_birth,username,password_hash
+1,1,Anura Fernando,199045612345,"14 Lake Road, Colombo 05",0771234501,1990-04-15,anura.fernando,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+2,1,Dilani Wickramasinghe,198532145678,"22 Park Street, Colombo 07",0771234502,1985-01-20,dilani.wick,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+3,2,Somasiri Gunawardena,196011223344,"5 Temple Road, Colombo 06",0771234503,1960-06-10,somasiri.g,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+4,2,Tharindu Jayasuriya,201055667788,"8 School Lane, Colombo 03",0771234504,2010-02-11,tharindu.j,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+5,3,Sithumini Perera,201899887766,"3 Rose Avenue, Kandy",0771234505,2018-09-05,sithumini.p,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+6,3,Ruwan Karunaratne,198822334455,"17 Hill Street, Kandy",0771234506,1988-11-30,ruwan.k,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+7,4,Chamara Rathnayake,199244556677,"9 River View, Kandy",0771234507,1992-07-22,chamara.r,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+8,5,Ishara De Silva,199355667788,"31 Sea View, Jaffna",0771234508,1993-03-18,ishara.desilva,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+9,1,Priyantha Wijesekara,195566778899,"12 Main Street, Colombo 04",0771234509,1955-12-25,priyantha.w,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+10,2,Nadeeka Abeysinghe,199677889900,"27 Flower Road, Colombo 07",0771234510,1996-05-08,nadeeka.a,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+11,3,Kavindu Senanayake,201188990011,"6 Garden Lane, Kandy",0771234511,2011-08-14,kavindu.s,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+12,4,Malithi Gunasekara,199499001122,"19 Station Road, Kandy",0771234512,1994-10-02,malithi.g,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+13,5,Vishwa Balasubramaniam,199100112233,"44 Beach Road, Jaffna",0771234513,1991-02-27,vishwa.b,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+14,1,Sanduni Rodrigo,201966778811,"2 Church Lane, Colombo 05",0771234514,2019-01-19,sanduni.r,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
+15,2,Buddhika Ekanayake,199722334466,"36 Lake View, Colombo 06",0771234515,1997-06-30,buddhika.e,$2b$10$pa0MEzi7.T9v77Mhjmj1g.84dQoFjC7qtoOwKvbbC/HXaEUSKsRXi
