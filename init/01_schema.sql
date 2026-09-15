@@ -35,7 +35,7 @@ create table customer(
     index index_customer_agent_id(agent_id)
 );
 
-create table saving_plan(
+create table savings_plan(
     plan_id int auto_increment primary key ,
     plan_name varchar(20) not null,
     interest_rate decimal(5,2) not null,
