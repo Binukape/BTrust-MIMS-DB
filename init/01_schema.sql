@@ -57,7 +57,7 @@ create table savings_account (
     status enum ('ACTIVE','CLOSED','DORMANT') not null,
     opened_date date not null,
     
-    foreign key (plan_id) references saving_plan(plan_id),
+    foreign key (plan_id) references savings_plan(plan_id),
     foreign key (branch_id) references branch(branch_id) ,
 
     index index_saving_account_plan_id(plan_id),
