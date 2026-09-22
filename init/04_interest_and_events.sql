@@ -183,7 +183,20 @@ END $$
 DELIMITER ;
 
 
-        
+SET GLOBAL event_sheduler = ON;
+
+DELIMITER $$
+CREATE EVENT IF NOT EXISTS ev_daily_interest_credit
+ON SCHEDULE EVERY 1 DAY
+START (TIMESTAMP(CURRENT_DATE) + INTERVAL 1 DAY + INTERVAL 1 HOUR)
+DO 
+BEGIN
+    -- Execute in the exact order specified
+    CALL sp_credit_savings_interest();
+    CALL sp_credit_fd_interest();
+END$$
+
+DELIMITER ;
 
 
 
