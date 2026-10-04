@@ -12,7 +12,7 @@ create table  agent(
     agent_nic varchar(20) not null unique,
     username varchar(50) not null unique,
     password_hash varchar(255) not null,
-    created_at datetime not null, 
+    created_at datetime not null  default current_timestamp, 
 
     foreign key (branch_id) references branch(branch_id),
 
@@ -29,7 +29,7 @@ create table customer(
     date_of_birth date not null,
     username varchar(50) not null unique,
     password_hash varchar(255) not null,
-    created_at datetime not null ,
+    created_at datetime not null default current_timestamp,
 
     foreign key (agent_id) references agent(agent_id) ,
     index index_customer_agent_id(agent_id)
@@ -37,7 +37,7 @@ create table customer(
 
 create table savings_plan(
     plan_id int auto_increment primary key ,
-    plan_name varchar(20) not null,
+    plan_name varchar(20) not null unique,
     interest_rate decimal(5,2) not null,
     minimum_balance decimal(10,2) not null ,
     min_age int null,
@@ -51,10 +51,10 @@ create table savings_account (
     plan_id int not null,
     branch_id int not null,
     account_number varchar(20) not null unique,
-    balance decimal(15,2) not null,
+    balance decimal(15,2) not null default 0.00,
     last_interest_credit_date date null,
-    is_joint boolean not null,
-    status enum ('ACTIVE','CLOSED','DORMANT') not null,
+    is_joint boolean not null default false,
+    status enum ('ACTIVE','CLOSED','DORMANT') not null default 'ACTIVE',
     opened_date date not null,
     
     foreign key (plan_id) references savings_plan(plan_id),
@@ -69,7 +69,7 @@ create table savings_account (
 create table account_holder(
     account_id int ,
     customer_id int ,
-    holder_role varchar(20) not null,
+    holder_role varchar(20) not null default 'PRIMARY',
 
     primary key (account_id,customer_id),
     foreign key (account_id) references savings_account(account_id),
@@ -80,9 +80,9 @@ create table account_holder(
 
 create table fd_plan(
     fd_plan_id int auto_increment primary key ,
-    tenure_months int not null,
+    tenure_months int not null unique,
     interest_rate decimal(5,2) not null,
-    early_closure_penalty_days int not NULL
+    early_closure_penalty_days int not null
 );
 
 create table fixed_deposit(
@@ -94,7 +94,7 @@ create table fixed_deposit(
     start_date date not null,
     maturity_date date not null,
     last_interest_credit_date date null,
-    status enum('ACTIVE', 'MATURED' , 'CLOSED') not null,
+    status enum('ACTIVE', 'MATURED' , 'CLOSED') not null default 'ACTIVE',
 
     foreign key (account_id) references savings_account(account_id),
     foreign key (fd_plan_id) references fd_plan(fd_plan_id),
@@ -112,7 +112,7 @@ create table transaction (
     reference_number varchar(30) not null unique,
     transaction_type enum('DEPOSIT','WITHDRAWAL','SAVINGS_INTEREST_CREDIT','FD_INTEREST_CREDIT','FD_MATURITY_PAYOUT','FD_EARLY_CLOSURE_ADJUSTMENT') NOT NULL,
     amount decimal(15,2) not null,
-    transaction_timestamp datetime not null, 
+    transaction_timestamp datetime not null default current_timestamp, 
 
     foreign key (account_id) references savings_account(account_id),
     foreign key (agent_id) references agent(agent_id),
@@ -129,5 +129,5 @@ create table transaction (
 
 create table transaction_daily_sequence(
     seq_date date primary key,
-    last_seq int not null 
+    last_seq int not null default 0
 );

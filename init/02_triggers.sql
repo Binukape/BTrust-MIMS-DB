@@ -9,9 +9,8 @@ BEGIN
     DECLARE v_minimum_balance DECIMAL(15,2);
     IF NEW.balance <> OLD.balance THEN
         SELECT minimum_balance INTO v_minimum_balance
-        FROM savings_account
+        FROM savings_plan
         WHERE plan_id = New.plan_id;
-
         IF NEW.balance < v_minimum_balance THEN
             SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Balance cannot be below the minimum balance for the selected plan.';
