@@ -56,6 +56,8 @@ create table savings_account (
     is_joint boolean not null default false,
     status enum ('ACTIVE','CLOSED','DORMANT') not null default 'ACTIVE',
     opened_date date not null,
+
+    constraint chk_balance_non_negative check (balance >= 0),
     
     foreign key (plan_id) references savings_plan(plan_id),
     foreign key (branch_id) references branch(branch_id) ,
