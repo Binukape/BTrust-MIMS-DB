@@ -23,8 +23,8 @@ create table admin_audit_log(
     new_values json null,
     changed_at datetime not null default (convert_tz(utc_timestamp(), '+00:00', '+05:30')),
     
-    foreign key (admin_id) references admin(admin_id),
-    
+    foreign key (admin_id) references admin(admin_id) on delete restrict on update cascade,
+
     index admin_audit_log_admin_id(admin_id),
     index admin_audit_log_table_record(table_name, record_id),
     index admin_audit_log_changed_at(changed_at) );
@@ -38,7 +38,7 @@ create table  agent(
     password_hash varchar(255) not null,
     created_at datetime not null  default (convert_tz(utc_timestamp(), '+00:00', '+05:30')), 
 
-    foreign key (branch_id) references branch(branch_id),
+    foreign key (branch_id) references branch(branch_id) on delete restrict on update cascade,
 
     index index_agent_branch_id(branch_id)
 );
@@ -55,7 +55,7 @@ create table customer(
     password_hash varchar(255) not null,
     created_at datetime not null default (convert_tz(utc_timestamp(), '+00:00', '+05:30')),
 
-    foreign key (agent_id) references agent(agent_id) ,
+    foreign key (agent_id) references agent(agent_id) on delete restrict on update cascade,
     index index_customer_agent_id(agent_id)
 );
 
@@ -83,8 +83,8 @@ create table savings_account (
 
     constraint chk_balance_non_negative check (balance >= 0),
     
-    foreign key (plan_id) references savings_plan(plan_id),
-    foreign key (branch_id) references branch(branch_id) ,
+    foreign key (plan_id) references savings_plan(plan_id) on delete restrict on update cascade,
+    foreign key (branch_id) references branch(branch_id) on delete restrict on update cascade,
 
     index index_saving_account_plan_id(plan_id),
     index index_saving_account_branch_id(branch_id),
@@ -98,8 +98,8 @@ create table account_holder(
     holder_role varchar(20) not null default 'PRIMARY',
 
     primary key (account_id,customer_id),
-    foreign key (account_id) references savings_account(account_id),
-    foreign key (customer_id) references customer(customer_id),
+    foreign key (account_id) references savings_account(account_id) on delete restrict on update cascade,
+    foreign key (customer_id) references customer(customer_id) on delete restrict on update cascade,
 
     index account_holder_customer_id(customer_id)
 );
@@ -122,8 +122,8 @@ create table fixed_deposit(
     last_interest_credit_date date null,
     status enum('ACTIVE', 'MATURED' , 'CLOSED') not null default 'ACTIVE',
 
-    foreign key (account_id) references savings_account(account_id),
-    foreign key (fd_plan_id) references fd_plan(fd_plan_id),
+    foreign key (account_id) references savings_account(account_id) on delete restrict on update cascade,
+    foreign key (fd_plan_id) references fd_plan(fd_plan_id) on delete restrict on update cascade,
 
     index fixed_deposit_account_id(account_id),
     index fixed_deposit_status(status)
@@ -145,14 +145,14 @@ create table transaction (
         'FD_OPENING_DEBIT',
         'FD_EARLY_CLOSURE_ADJUSTMENT',
         'FD_EARLY_CLOSURE_PAYOUT'
-        ) NOT NULL,
+        ) not null,
 
     amount decimal(15,2) not null,
     transaction_timestamp datetime not null default (convert_tz(utc_timestamp(), '+00:00', '+05:30')), 
 
-    foreign key (account_id) references savings_account(account_id),
-    foreign key (agent_id) references agent(agent_id),
-    foreign key(fd_id) references fixed_deposit(fd_id),
+    foreign key (account_id) references savings_account(account_id) on delete restrict on update cascade,
+    foreign key (agent_id) references agent(agent_id) on delete restrict on update cascade,
+    foreign key(fd_id) references fixed_deposit(fd_id) on delete restrict on update cascade,
 
     index transaction_account_id(account_id),
     index transaction_agent_id(agent_id),
