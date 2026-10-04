@@ -39,7 +39,7 @@ create table savings_plan(
     plan_id int auto_increment primary key ,
     plan_name varchar(20) not null unique,
     interest_rate decimal(5,2) not null,
-    minimum_balance decimal(10,2) not null ,
+    minimum_balance decimal(15,2) not null ,
     min_age int null,
     max_age int null
 
