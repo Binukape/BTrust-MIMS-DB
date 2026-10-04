@@ -12,7 +12,7 @@ create table  agent(
     agent_nic varchar(20) not null unique,
     username varchar(50) not null unique,
     password_hash varchar(255) not null,
-    created_at datetime not null  default current_timestamp, 
+    created_at datetime not null  default (convert_tz(utc_timestamp(), '+00:00', '+05:30')), 
 
     foreign key (branch_id) references branch(branch_id),
 
@@ -29,7 +29,7 @@ create table customer(
     date_of_birth date not null,
     username varchar(50) not null unique,
     password_hash varchar(255) not null,
-    created_at datetime not null default current_timestamp,
+    created_at datetime not null default (convert_tz(utc_timestamp(), '+00:00', '+05:30')),
 
     foreign key (agent_id) references agent(agent_id) ,
     index index_customer_agent_id(agent_id)
@@ -114,7 +114,7 @@ create table transaction (
     reference_number varchar(30) not null unique,
     transaction_type enum('DEPOSIT','WITHDRAWAL','SAVINGS_INTEREST_CREDIT','FD_INTEREST_CREDIT','FD_MATURITY_PAYOUT','FD_EARLY_CLOSURE_ADJUSTMENT') NOT NULL,
     amount decimal(15,2) not null,
-    transaction_timestamp datetime not null default current_timestamp, 
+    transaction_timestamp datetime not null default (convert_tz(utc_timestamp(), '+00:00', '+05:30')), 
 
     foreign key (account_id) references savings_account(account_id),
     foreign key (agent_id) references agent(agent_id),
