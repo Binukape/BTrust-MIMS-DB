@@ -112,7 +112,17 @@ create table transaction (
     agent_id int null,
     fd_id int null, 
     reference_number varchar(30) not null unique,
-    transaction_type enum('DEPOSIT','WITHDRAWAL','SAVINGS_INTEREST_CREDIT','FD_INTEREST_CREDIT','FD_MATURITY_PAYOUT','FD_EARLY_CLOSURE_ADJUSTMENT') NOT NULL,
+    transaction_type enum(
+        'DEPOSIT',
+        'WITHDRAWAL',
+        'SAVINGS_INTEREST_CREDIT',
+        'FD_INTEREST_CREDIT',
+        'FD_MATURITY_PAYOUT',
+        'FD_OPENING_DEBIT',
+        'FD_EARLY_CLOSURE_ADJUSTMENT',
+        'FD_EARLY_CLOSURE_PAYOUT'
+        ) NOT NULL,
+
     amount decimal(15,2) not null,
     transaction_timestamp datetime not null default (convert_tz(utc_timestamp(), '+00:00', '+05:30')), 
 
@@ -125,7 +135,9 @@ create table transaction (
     index transaction_fd_id(fd_id),
     index transaction_transaction_type(transaction_type),
     index transaction_transaction_timestamp(transaction_timestamp)
-    
+    index transaction_agent_ts(agent_id, transaction_timestamp),
+    index transaction_account_ts(account_id, transaction_timestamp),
+    index transaction_type_ts(transaction_type, transaction_timestamp)   
 
 );
 
