@@ -3,7 +3,7 @@ create table branch(
     branch_name varchar(100) not null,
     branch_address varchar(255) not null,
     branch_phone varchar(20) not null
-);
+)ENGINE=InnoDB;
 
 create table admin (
      admin_id int auto_increment primary key,
@@ -11,7 +11,7 @@ create table admin (
      username varchar(50) not null unique,
      password_hash varchar(255) not null,
      created_at datetime not null default (convert_tz(utc_timestamp(), '+00:00', '+05:30'))
-);
+)ENGINE=InnoDB;
 
 create table admin_audit_log(
     log_id int auto_increment primary key,
@@ -27,7 +27,8 @@ create table admin_audit_log(
 
     index admin_audit_log_admin_id(admin_id),
     index admin_audit_log_table_record(table_name, record_id),
-    index admin_audit_log_changed_at(changed_at) );
+    index admin_audit_log_changed_at(changed_at)
+ )ENGINE=InnoDB;
 
 create table  agent(
     agent_id int auto_increment primary key,
@@ -41,7 +42,7 @@ create table  agent(
     foreign key (branch_id) references branch(branch_id) on delete restrict on update cascade,
 
     index index_agent_branch_id(branch_id)
-);
+)ENGINE=InnoDB;
 
 create table customer(
     customer_id int auto_increment primary key,
@@ -57,7 +58,7 @@ create table customer(
 
     foreign key (agent_id) references agent(agent_id) on delete restrict on update cascade,
     index index_customer_agent_id(agent_id)
-);
+)ENGINE=InnoDB;
 
 create table savings_plan(
     plan_id int auto_increment primary key ,
@@ -67,7 +68,7 @@ create table savings_plan(
     min_age int null,
     max_age int null
 
-);
+)ENGINE=InnoDB;
 
 
 create table savings_account (
@@ -89,7 +90,7 @@ create table savings_account (
     index index_saving_account_plan_id(plan_id),
     index index_saving_account_branch_id(branch_id),
     index index_saving_account_status(status)
-);
+)ENGINE=InnoDB;
 
 
 create table account_holder(
@@ -102,14 +103,14 @@ create table account_holder(
     foreign key (customer_id) references customer(customer_id) on delete restrict on update cascade,
 
     index account_holder_customer_id(customer_id)
-);
+)ENGINE=InnoDB;
 
 create table fd_plan(
     fd_plan_id int auto_increment primary key ,
     tenure_months int not null unique,
     interest_rate decimal(5,2) not null,
     early_closure_penalty_days int not null
-);
+)ENGINE=InnoDB;
 
 create table fixed_deposit(
     fd_id int auto_increment primary key,
@@ -127,7 +128,7 @@ create table fixed_deposit(
 
     index fixed_deposit_account_id(account_id),
     index fixed_deposit_status(status)
-);
+)ENGINE=InnoDB;
 
 
 create table transaction (
@@ -158,14 +159,14 @@ create table transaction (
     index transaction_agent_id(agent_id),
     index transaction_fd_id(fd_id),
     index transaction_transaction_type(transaction_type),
-    index transaction_transaction_timestamp(transaction_timestamp)
+    index transaction_transaction_timestamp(transaction_timestamp),
     index transaction_agent_ts(agent_id, transaction_timestamp),
     index transaction_account_ts(account_id, transaction_timestamp),
     index transaction_type_ts(transaction_type, transaction_timestamp)   
 
-);
+)ENGINE=InnoDB;
 
 create table transaction_daily_sequence(
     seq_date date primary key,
     last_seq int not null default 0
-);
+)ENGINE=InnoDB;
