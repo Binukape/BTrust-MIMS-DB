@@ -7,7 +7,7 @@ BEFORE UPDATE ON savings_account
 FOR EACH ROW
 BEGIN
     DECLARE v_minimum_balance DECIMAL(15,2);
-    IF NEW.balance <> OLD.balance THEN
+    IF NEW.balance < OLD.balance THEN
         SELECT minimum_balance INTO v_minimum_balance
         FROM savings_plan
         WHERE plan_id = New.plan_id;
