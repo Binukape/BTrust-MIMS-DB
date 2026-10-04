@@ -5,6 +5,30 @@ create table branch(
     branch_phone varchar(20) not null
 );
 
+create table admin (
+     admin_id int auto_increment primary key,
+     full_name varchar(100) not null,
+     username varchar(50) not null unique,
+     password_hash varchar(255) not null,
+     created_at datetime not null default (convert_tz(utc_timestamp(), '+00:00', '+05:30'))
+);
+
+create table admin_audit_log(
+    log_id int auto_increment primary key,
+    admin_id int not null,
+    action enum('INSERT','UPDATE','DELETE') not null,
+    table_name varchar(30) not null,
+    record_id int not null,
+    old_values json null,
+    new_values json null,
+    changed_at datetime not null default (convert_tz(utc_timestamp(), '+00:00', '+05:30')),
+    
+    foreign key (admin_id) references admin(admin_id),
+    
+    index admin_audit_log_admin_id(admin_id),
+    index admin_audit_log_table_record(table_name, record_id),
+    index admin_audit_log_changed_at(changed_at) );
+
 create table  agent(
     agent_id int auto_increment primary key,
     branch_id int not null,
