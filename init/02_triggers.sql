@@ -65,3 +65,24 @@ BEGIN
     END IF;
 END$$
 
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE TRIGGER trg_transaction_no_update
+BEFORE UPDATE ON transaction
+FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'Transactions are append only, updates are not not allowed. Add an offsetting transaction instead.';
+END $$
+
+CREATE TRIGGER trg_transaction_no_delete
+BEFORE DELETE ON transaction
+FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'Transactions are append only, deletes are not allowed. Add an offsetting transaction instead.';
+END $$
+
+DELIMITER ;
