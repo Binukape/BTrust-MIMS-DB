@@ -39,7 +39,7 @@ BEGIN
         IF done THEN LEAVE read_loop; END IF;
 
         SET v_cycle_start = COALESCE(v_last_credit, v_opened);
-        SET v_days_passed = DATEDIFF(CURDATE(), v_cycle_start);
+        SET v_days_passed = DATEDIFF(fn_today_sl(), v_cycle_start);
 
         IF v_days_passed >= 30 THEN
 
@@ -47,7 +47,7 @@ BEGIN
 
             UPDATE savings_account
             SET balance = balance + v_interest_amount,
-                last_interest_credit_date = CURDATE()
+                last_interest_credit_date = fn_today_sl()
             WHERE account_id = v_account_id;
 
             IF v_interest_amount >0 THEN
@@ -57,7 +57,7 @@ BEGIN
                 
 
                 INSERT INTO transaction(account_id, reference_number, transaction_type, amount, transaction_timestamp)
-                VALUES (v_account_id, v_ref_num, 'SAVINGS_INTEREST_CREDIT', v_interest_amount, CURRENT_TIMESTAMP());
+                VALUES (v_account_id, v_ref_num, 'SAVINGS_INTEREST_CREDIT', v_interest_amount, fn_now_sl());
 
             END IF;
 
@@ -123,7 +123,7 @@ BEGIN
 
         SET v_cycle_start = COALESCE(v_last_credit_date, v_start_date);
 
-        IF CURDATE() >= v_maturity_date THEN
+        IF fn_today_sl() >= v_maturity_date THEN
 
             
             SET final_days = DATEDIFF(v_maturity_date, v_cycle_start);
@@ -142,10 +142,10 @@ BEGIN
             SET v_ref_num = fn_next_reference_number();
 
             INSERT INTO transaction(account_id, fd_id, reference_number, transaction_type, amount, transaction_timestamp)
-            VALUES (v_account_id, v_fd_id, v_ref_num, 'FD_MATURITY_PAYOUT', v_principal_amount + final_interest, CURRENT_TIMESTAMP());
+            VALUES (v_account_id, v_fd_id, v_ref_num, 'FD_MATURITY_PAYOUT', v_principal_amount + final_interest, fn_now_sl());
 
         ELSE
-            SET v_days_passed = DATEDIFF(CURDATE(), v_cycle_start);
+            SET v_days_passed = DATEDIFF(fn_today_sl(), v_cycle_start);
 
 
             IF v_days_passed >= 30 THEN
@@ -157,7 +157,7 @@ BEGIN
                 WHERE account_id = v_account_id;
 
                 UPDATE fixed_deposit
-                SET last_interest_credit_date = CURDATE()
+                SET last_interest_credit_date = fn_today_sl()
                 WHERE fd_id = v_fd_id;
 
                 IF v_interest_amount >0 THEN
@@ -167,7 +167,7 @@ BEGIN
                     
 
                     INSERT INTO transaction(account_id, fd_id, reference_number, transaction_type, amount, transaction_timestamp)
-                    VALUES (v_account_id, v_fd_id, v_ref_num, 'FD_INTEREST_CREDIT', v_interest_amount, CURRENT_TIMESTAMP());
+                    VALUES (v_account_id, v_fd_id, v_ref_num, 'FD_INTEREST_CREDIT', v_interest_amount, fn_now_sl());
 
                 END IF;
 
