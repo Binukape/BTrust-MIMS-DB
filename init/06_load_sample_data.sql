@@ -1,3 +1,10 @@
+LOAD DATA INFILE '/docker-entrypoint-initdb.d/data/admins.csv'
+INTO TABLE admin
+FIELDS TERMINATED BY ',' ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(admin_id, full_name, username, password_hash);
+
 LOAD DATA INFILE '/docker-entrypoint-initdb.d/data/branches.csv'
 INTO TABLE branch
 FIELDS TERMINATED BY ',' ENCLOSED BY '"'
