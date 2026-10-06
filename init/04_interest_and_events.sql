@@ -126,7 +126,7 @@ BEGIN
         IF fn_today_sl() >= v_maturity_date THEN
 
             
-            SET final_days = DATEDIFF(v_maturity_date, v_cycle_start);
+            SET final_days = GREATEST(DATEDIFF(v_maturity_date, v_cycle_start), 0);
             SET final_interest = ROUND(v_principal_amount * (v_interest_rate / 100) * (final_days / 365), 2);
             
 
