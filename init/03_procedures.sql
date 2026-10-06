@@ -200,7 +200,7 @@ BEGIN
         IF v_status IS NULL THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Savings account not found.';
         ELSEIF v_status <> 'ACTIVE' THEN
-            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A Fixed Deposit requires an ACTIVE Savings Account (FR-4.4.3).';
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'A Fixed Deposit requires an ACTIVE Savings Account.';
         END IF;
 
         SET v_start = fn_today_sl();
