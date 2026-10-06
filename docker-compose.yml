@@ -25,7 +25,7 @@ services:
     command:
       # local_infile must be ON for LOAD DATA INFILE in 06_load_sample_data.sql
       - --local-infile=1
-      - --secure-file-priv=""
+      - --secure-file-priv=/docker-entrypoint-initdb.d
     healthcheck:
       test:
         [
