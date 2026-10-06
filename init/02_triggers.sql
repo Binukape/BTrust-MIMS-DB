@@ -74,7 +74,7 @@ BEFORE UPDATE ON transaction
 FOR EACH ROW
 BEGIN
     SIGNAL SQLSTATE '45000'
-    SET MESSAGE_TEXT = 'Transactions are append only, updates are not not allowed. Add an offsetting transaction instead.';
+    SET MESSAGE_TEXT = 'Transactions are append only, updates are not allowed. Add an offsetting transaction instead.';
 END $$
 
 CREATE TRIGGER trg_transaction_no_delete
