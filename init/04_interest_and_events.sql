@@ -183,7 +183,7 @@ END $$
 DELIMITER ;
 
 
-SET GLOBAL event_sheduler = ON;
+SET GLOBAL event_scheduler = ON;
 
 DELIMITER $$
 CREATE EVENT IF NOT EXISTS ev_daily_interest_credit
