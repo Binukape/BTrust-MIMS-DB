@@ -238,6 +238,7 @@ BEGIN
     DECLARE v_principal DECIMAL(15,2);
     DECLARE v_rate DECIMAL(5,2);
     DECLARE v_penalty_days INT;
+    DECLARE v_maturity DATE;
     DECLARE v_penalty DECIMAL(15,2);
     DECLARE v_payout DECIMAL(15,2);
     DECLARE v_reference VARCHAR(30);
@@ -250,8 +251,8 @@ BEGIN
 
     START TRANSACTION;
 
-        SELECT fd.account_id, fd.status, fd.principal_amount, fd.interest_rate_snapshot, fp.early_closure_penalty_days
-        INTO v_account_id, v_status, v_principal, v_rate, v_penalty_days
+        SELECT fd.account_id, fd.status, fd.principal_amount, fd.interest_rate_snapshot, fp.early_closure_penalty_days, fd.maturity_date
+        INTO v_account_id, v_status, v_principal, v_rate, v_penalty_days, v_maturity
         FROM fixed_deposit fd
         JOIN fd_plan fp ON fd.fd_plan_id = fp.fd_plan_id
         WHERE fd.fd_id = p_fd_id
@@ -261,6 +262,8 @@ BEGIN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fixed Deposit not found.';
         ELSEIF v_status <> 'ACTIVE' THEN
             SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Only an ACTIVE Fixed Deposit can be closed early.';
+        ELSEIF v_maturity <= fn_today_sl() THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Fixed Deposit has matured; the nightly job will pay it out.';
         END IF;
 
         SET v_penalty = LEAST(ROUND(v_principal * (v_rate / 100) * (v_penalty_days / 365), 2), v_principal);
