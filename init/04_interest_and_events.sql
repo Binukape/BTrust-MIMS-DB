@@ -37,6 +37,13 @@ BEGIN
         FETCH cur INTO v_account_id, v_balance, v_last_credit, v_opened, v_rate;
 
         IF done THEN LEAVE read_loop; END IF;
+        one_account: BEGIN
+        DECLARE EXIT HANDLER FOR SQLEXCEPTION
+        BEGIN
+            ROLLBACK;
+        END;
+        START TRANSACTION;
+        SELECT balance INTO v_balance FROM savings_account WHERE account_id = v_account_id FOR UPDATE;
 
         SET v_cycle_start = COALESCE(v_last_credit, v_opened);
         SET v_days_passed = DATEDIFF(fn_today_sl(), v_cycle_start);
@@ -65,6 +72,8 @@ BEGIN
 
 
         END IF;
+        COMMIT;
+        END one_account;
     END LOOP;
 
     CLOSE cur;
@@ -95,6 +104,7 @@ BEGIN
 
     DECLARE final_days INT;
     DECLARE final_interest DECIMAL(15, 2);
+    DECLARE v_status VARCHAR(10);
 
 
     DECLARE cur CURSOR FOR
@@ -119,6 +129,14 @@ BEGIN
 
         FETCH cur INTO v_fd_id, v_account_id, v_principal_amount, v_interest_rate, v_start_date, v_maturity_date, v_last_credit_date;
         IF done THEN LEAVE read_loop; END IF;
+        one_fd: BEGIN
+        DECLARE EXIT HANDLER FOR SQLEXCEPTION
+        BEGIN
+            ROLLBACK;
+        END;
+        START TRANSACTION;
+        SELECT status INTO v_status FROM fixed_deposit WHERE fd_id = v_fd_id FOR UPDATE;
+        IF v_status = 'ACTIVE' THEN
         
 
         SET v_cycle_start = COALESCE(v_last_credit_date, v_start_date);
@@ -173,6 +191,9 @@ BEGIN
 
             END IF;
         END IF;
+        END IF;
+        COMMIT;
+        END one_fd;
 
     END LOOP;
 

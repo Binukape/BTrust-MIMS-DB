@@ -1,97 +1,129 @@
-# BTrust-MIMS-DB — Starter Dev Environment
+# BTrust-MIMS-DB
 
-This is a **starter kit**, not a finished database. It contains everything EXCEPT the actual SQL logic — that part is what you're building yourself, using the companion document `BTrust_MIMS_DB_Beginner_Task_Guide.md`.
+Database for the B-Trust Microbanking and Interest Management System (MIMS), Group 28, In24-S3-CS3043 Database Systems. MySQL 8.0, InnoDB.
 
-## What's already here
+This repository is the data tier only. The API and the web app live in the BTrust_MIMS-Backend and BTrust-MIMS-Frontend repositories.
+
+## Repository structure
 
 ```
 BTrust-MIMS-DB/
-├── docker-compose.yml       — fully working, ready to use as-is
-├── README.md                 — this file
+├── build.sql                          runs every script in order (used for Aiven)
+├── docker-compose.yml                 local MySQL 8.0
+├── README.md
+├── aiven/
+│   └── 06_load_sample_data_aiven.sql  LOAD DATA LOCAL INFILE version of step 06
 └── init/
-    └── data/                  — all 6 sample data CSVs, fully populated and ready to load
-        ├── branches.csv
-        ├── agents.csv
-        ├── customers.csv
-        ├── savings_accounts.csv
-        ├── account_holders.csv
-        └── fixed_deposits.csv
+    ├── 01_schema.sql                  12 tables, keys, indexes, constraints
+    ├── 02_triggers.sql                minimum balance, one active FD, append-only ledger
+    ├── 03_procedures.sql              time helpers, reference numbers, deposit, withdraw, open FD, close FD early
+    ├── 04_interest_and_events.sql     savings and FD interest procedures, daily event
+    ├── 05_reference_data.sql          5 savings plans, 3 FD plans
+    ├── 06_load_sample_data.sql        loads the CSV files
+    ├── 07_generate_transactions.sql   sp_seed_sample_transactions()
+    ├── 08_admin_audit.sql             audit triggers for admin changes
+    ├── 09_reports.sql                 the report views
+    ├── 10_users_dev.sql               the three MySQL accounts with dev passwords (local only)
+    ├── 11_grants.sql                  permissions for those accounts, no passwords
+    └── data/                          admins, branches, agents, customers, savings_accounts,
+                                       account_holders, fixed_deposits (CSV)
 ```
 
-## What you need to build
-
-Inside the `init/` folder (alongside the existing `data/` folder), you need to create these 7 files, following the Beginner's Task Guide:
-
-```
-init/
-├── 01_schema.sql
-├── 02_triggers.sql
-├── 03_procedures.sql
-├── 04_interest_and_events.sql
-├── 05_reference_data.sql
-├── 06_load_sample_data.sql
-└── 07_generate_transactions.sql
-```
-
-And at the repository root, alongside `docker-compose.yml`:
-
-```
-build.sql
-```
-
-**The numeric prefixes (01_, 02_, etc.) matter.** Docker's MySQL image automatically runs every file it finds in `init/` in filename order, the very first time it starts against an empty database — so the numbering is what guarantees your schema exists before your triggers try to attach to it, and so on.
-
-## How to test your work as you go
-
-Once you've created at least `01_schema.sql`, you can already start the database and see it apply automatically:
+## Quick start (local, Docker)
 
 ```bash
 docker compose up -d
 ```
 
-To check what actually happened (useful after every change):
+On the first start against an empty volume, MySQL runs every file in `init/` in filename order. Check that nothing failed:
 
 ```bash
-docker logs mims_db
+docker logs mims_db 2>&1 | grep ERROR
 ```
 
-To connect directly and poke around:
+The command must print nothing.
+
+The database is then available on `localhost:3307`, database name `mims_db`, root password `rootpassword`:
 
 ```bash
-docker exec -it mims_db mysql -uroot -prootpassword mims_db
+docker compose exec db mysql -uroot -prootpassword mims_db
 ```
 
-**Important:** Docker's automatic file-running only happens on a completely empty database volume. If you add or change a file after the container has already started once, it won't re-run automatically. To force a clean re-run after editing a file:
+The CSV files contain no transactions. Create the 100 sample transactions once, after the first start:
+
+```bash
+docker compose exec db mysql -uroot -prootpassword mims_db -e "CALL sp_seed_sample_transactions(100);"
+```
+
+To start again from an empty database:
 
 ```bash
 docker compose down -v
 docker compose up -d
 ```
 
-(`-v` also deletes the stored data volume, wiping everything and forcing a genuinely fresh start — this is exactly what you want while you're still actively building and testing.)
+The compose file passes `--secure-file-priv=/docker-entrypoint-initdb.d` so that `LOAD DATA INFILE` in step 06 can read the CSV files from `init/data/`. Writing `--secure-file-priv=""` in a compose list passes two literal quote characters and the load fails with error 1290.
 
-Once you've written `07_generate_transactions.sql`, generate the required 100 sample transactions with:
+## Sample data
+
+| Table | Rows |
+|---|---|
+| admin | 1 |
+| branch | 3 |
+| agent | 5 |
+| customer | 15 |
+| savings_account | 13 (11 individual, 2 joint) |
+| account_holder | 15 |
+| fixed_deposit | 10 (all three tenures) |
+| transaction | 100 (created by `sp_seed_sample_transactions`) |
+
+The sample transactions come from a procedure and not from a CSV file because every one needs a reference number from `fn_next_reference_number()`, and they are backdated across about 180 days. `sp_deposit` and `sp_withdraw` would refuse backdated rows because of the business-hours check.
+
+## Demo logins
+
+Every seeded admin, agent and customer uses the demo password `password123`. It is for development only. Usernames follow `firstname.lastname`, for example `nimal.perera` (agent) and `anura.fernando` (customer). The demo administrator is `admin.demo`.
+
+## Database accounts
+
+| Account | Used by | Rights |
+|---|---|---|
+| `mims_owner` | the team, `build.sql` | everything on `mims_db` |
+| `mims_app` | the backend | read all tables; EXECUTE on `sp_deposit`, `sp_withdraw`, `sp_open_fd`, `sp_close_fd_early`; manage branches, agents, customers and accounts; update only `savings_account.status`. No write on `transaction` or on any balance, no DROP. |
+| `mims_reports` | report queries | SELECT on the report views only |
+
+Locally, `10_users_dev.sql` creates them with dev passwords (`dev_owner_pw`, `dev_app_pw`, `dev_reports_pw`) and `11_grants.sql` sets the permissions. These passwords are for local use only.
+
+On Aiven the dev passwords do not exist. Create the three users in the Aiven console with real passwords, keep those passwords out of the repository, and let `build.sql` run `11_grants.sql`. `build.sql` does not run `10_users_dev.sql`.
+
+## Deploying to Aiven
+
+Aiven has no equivalent of `docker-entrypoint-initdb.d`, so `build.sql` runs the scripts in order with the `mysql` client:
 
 ```bash
-docker exec -it mims_db mysql -uroot -prootpassword mims_db -e "CALL sp_seed_sample_transactions(100);"
+mysql -h <host> -P <port> -u <user> -p --local-infile=1 < build.sql
 ```
 
-(Adjust the procedure name above if you named it differently — this assumes you followed the guide's suggested naming.)
+- Run it from the repository root, with the `mysql` command line client. `SOURCE` is a client command, so a web console will not work.
+- Step 06 uses `aiven/06_load_sample_data_aiven.sql` (`LOAD DATA LOCAL INFILE` with relative paths), because the Docker paths do not exist on the server. Both the client (`--local-infile=1`) and the server (`local_infile` parameter) must allow it. If a CSV column list changes, update both loader files.
+- `build.sql` also runs `CALL sp_seed_sample_transactions(100)`.
+- The daily event needs the event scheduler. Some managed MySQL services restrict `SET GLOBAL event_scheduler = ON`. Check that `ev_daily_interest_credit` runs.
 
-## Demo login credentials
+## Business rules enforced in the database
 
-Every row in `agents.csv` and `customers.csv` shares the same pre-computed password hash. The real password behind that hash is:
+| Rule | Where |
+|---|---|
+| Balance never below the plan minimum or below zero | `trg_prevent_below_minimum_balance`, `CHECK (balance >= 0)` |
+| One ACTIVE fixed deposit per account | `trg_prevent_second_active_fd`, `trg_prevent_second_active_fd_on_update` |
+| Transactions are append-only | `trg_transaction_no_update`, `trg_transaction_no_delete` |
+| Daily withdrawal limit of LKR 100,000 | `sp_withdraw` |
+| Deposits and withdrawals only between 09:00 and 17:00 Sri Lanka time | `fn_is_business_hours()` in `sp_deposit` and `sp_withdraw` |
+| Sri Lanka time everywhere | `fn_now_sl()`, `fn_today_sl()` |
+| Unique reference numbers `TXN-YYYYMMDD-NNNNNN` | `fn_next_reference_number()`, `transaction_daily_sequence` |
+| Opening an FD debits the savings balance | `sp_open_fd` |
+| Early FD closure: flat penalty, payout row and penalty row, refused on or after the maturity date | `sp_close_fd_early` |
+| 30-day simple interest for savings and FDs, credited once per cycle | `sp_credit_savings_interest()`, `sp_credit_fd_interest()`, daily event `ev_daily_interest_credit` |
+| Each interest credit is its own transaction and rolls back on error | `sp_credit_savings_interest()`, `sp_credit_fd_interest()` |
+| Admin changes to reference data are logged | `trg_audit_*` in `08_admin_audit.sql` (the backend sets `@acting_admin_id` first) |
+| Reports read only the report views | `09_reports.sql` |
 
-**`password123`**
-
-This is for local development convenience only — never treat this as real security, and never reuse this pattern outside of local sample data.
-
-## A note on the sample data you've been given
-
-Look closely at `customers.csv` before you write your loader (Task 6) — the birth dates were deliberately chosen to span every age-eligible savings plan band your schema will define, and `account_holders.csv` deliberately links two pairs of customers to the same account twice each, to represent the two required joint accounts. Understanding *why* the data looks the way it does will help you sanity-check your own schema and triggers once you start loading it.
-
-## Once your database is fully built
-
-Come back to this README and consider adding:
-- A "Key business rules enforced at the database level" reference table, documenting which trigger or procedure enforces which rule, for anyone else reading your finished project.
-- Deployment notes if you ever need to run this against a real cloud database host instead of just locally in Docker — in particular, note that `LOAD DATA INFILE`'s file paths and the `SOURCE` command in `build.sql` both behave differently outside of a local Docker setup.
+Checked by the application and not by the database: age limits per plan, and setting an account to DORMANT.
