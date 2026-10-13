@@ -8,11 +8,11 @@ This repository is the data tier only. The API and the web app live in the BTrus
 
 ```
 BTrust-MIMS-DB/
-├── build.sql                          runs every script in order (used for Aiven)
-├── docker-compose.yml                 local MySQL 8.0
+├── docker-compose.yml                 local stack
+├── docker-compose.prod.yml            production stack (Azure virtual machine)
 ├── README.md
-├── aiven/
-│   └── 06_load_sample_data_aiven.sql  LOAD DATA LOCAL INFILE version of step 06
+├── deploy/                            Caddyfile, .env.example
+├── .github/workflows/deploy.yml       copies the stack files to the server
 └── init/
     ├── 01_schema.sql                  12 tables, keys, indexes, constraints
     ├── 02_triggers.sql                minimum balance, one active FD, append-only ledger
@@ -87,26 +87,25 @@ Every seeded admin, agent and customer uses the demo password `password123`. It 
 
 | Account | Used by | Rights |
 |---|---|---|
-| `mims_owner` | the team, `build.sql` | everything on `mims_db` |
+| `mims_owner` | the team | everything on `mims_db` |
 | `mims_app` | the backend | read all tables; EXECUTE on `sp_deposit`, `sp_withdraw`, `sp_open_fd`, `sp_close_fd_early`; manage branches, agents, customers and accounts; update only `savings_account.status`. No write on `transaction` or on any balance, no DROP. |
 | `mims_reports` | report queries | SELECT on the report views only |
 
 `10_users.sh` creates them from the environment variables `MIMS_OWNER_PASSWORD`, `MIMS_APP_PASSWORD` and `MIMS_REPORTS_PASSWORD`, and `11_grants.sql` sets the permissions. Locally, when the variables are not set, the dev passwords `dev_owner_pw`, `dev_app_pw` and `dev_reports_pw` are used. These are for local use only; on a server always set real values.
 
-On Aiven the dev passwords do not exist. Create the three users in the Aiven console with real passwords, keep those passwords out of the repository, and let `build.sql` run `11_grants.sql`. `build.sql` does not run `10_users.sh`.
+## Deploying
 
-## Deploying to Aiven
+Production runs on one Azure virtual machine with `docker-compose.prod.yml`: Caddy (HTTPS, `/api` to the backend), MySQL, a one-time seeder, the backend and the frontend. The images come from ghcr.io.
 
-Aiven has no equivalent of `docker-entrypoint-initdb.d`, so `build.sql` runs the scripts in order with the `mysql` client:
+On the server, create `/opt/mims/.env` from `deploy/.env.example` and fill in the domain, the GitHub owner, the four database passwords and `JWT_SECRET`. The production compose file refuses to start when one is missing. Then:
 
 ```bash
-mysql -h <host> -P <port> -u <user> -p --local-infile=1 < build.sql
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-- Run it from the repository root, with the `mysql` command line client. `SOURCE` is a client command, so a web console will not work.
-- Step 06 uses `aiven/06_load_sample_data_aiven.sql` (`LOAD DATA LOCAL INFILE` with relative paths), because the Docker paths do not exist on the server. Both the client (`--local-infile=1`) and the server (`local_infile` parameter) must allow it. If a CSV column list changes, update both loader files.
-- `build.sql` also runs `CALL sp_seed_sample_transactions(100)`.
-- The daily event needs the event scheduler. Some managed MySQL services restrict `SET GLOBAL event_scheduler = ON`. Check that `ev_daily_interest_credit` runs.
+- MySQL runs `init/` only on an empty data volume. A change to a database script on an existing server needs a manual migration, or `docker compose -f docker-compose.prod.yml down -v` and a new start, which deletes the data.
+- The event scheduler is switched on by the compose file, so `ev_daily_interest_credit` runs every day.
+- Pushing to `main` runs `.github/workflows/deploy.yml`, which copies `docker-compose.prod.yml`, `deploy/` and `init/` to the server. The backend and frontend repositories deploy their own images.
 
 ## Business rules enforced in the database
 

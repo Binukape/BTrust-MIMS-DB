@@ -96,7 +96,7 @@ create table savings_account (
 create table account_holder(
     account_id int ,
     customer_id int ,
-    holder_role varchar(20) not null default 'PRIMARY',
+    holder_role enum('PRIMARY','SECONDARY') not null default 'PRIMARY',
 
     primary key (account_id,customer_id),
     foreign key (account_id) references savings_account(account_id) on delete restrict on update cascade,
@@ -122,6 +122,9 @@ create table fixed_deposit(
     maturity_date date not null,
     last_interest_credit_date date null,
     status enum('ACTIVE', 'MATURED' , 'CLOSED') not null default 'ACTIVE',
+
+    constraint chk_fd_principal_positive check (principal_amount > 0),
+    constraint chk_fd_dates check (maturity_date > start_date),
 
     foreign key (account_id) references savings_account(account_id) on delete restrict on update cascade,
     foreign key (fd_plan_id) references fd_plan(fd_plan_id) on delete restrict on update cascade,
@@ -150,6 +153,8 @@ create table transaction (
 
     amount decimal(15,2) not null,
     transaction_timestamp datetime not null default (convert_tz(utc_timestamp(), '+00:00', '+05:30')), 
+
+    constraint chk_transaction_amount_positive check (amount > 0),
 
     foreign key (account_id) references savings_account(account_id) on delete restrict on update cascade,
     foreign key (agent_id) references agent(agent_id) on delete restrict on update cascade,
