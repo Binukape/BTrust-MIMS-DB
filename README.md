@@ -8,11 +8,13 @@ This repository is the data tier only. The API and the web app live in the BTrus
 
 ```
 BTrust-MIMS-DB/
-├── docker-compose.yml                 local stack
+├── docker-compose.yml                 local stack (database, seeder, backend, frontend)
 ├── docker-compose.prod.yml            production stack (Azure virtual machine)
 ├── README.md
 ├── deploy/                            Caddyfile, .env.example
-├── .github/workflows/deploy.yml       copies the stack files to the server
+├── .github/workflows/
+│   ├── deploy.yml                     copies the stack files to the server and checks the site
+│   └── reset-database.yml             manual button: rebuild the database from init/
 └── init/
     ├── 01_schema.sql                  12 tables, keys, indexes, constraints
     ├── 02_triggers.sql                minimum balance, one active FD, append-only ledger
@@ -31,38 +33,51 @@ BTrust-MIMS-DB/
 
 ## Quick start (local, Docker)
 
-```bash
-docker compose up -d
+The full stack needs the three repositories side by side in one folder:
+
+```
+BTrust-MIMS-DB/    BTrust_MIMS-Backend/    BTrust-MIMS-Frontend/
 ```
 
-On the first start against an empty volume, MySQL runs every file in `init/` in filename order. Check that nothing failed:
+From inside `BTrust-MIMS-DB`:
+
+```bash
+docker compose up -d --build
+```
+
+| Service | What it is | Address |
+|---|---|---|
+| `db` | MySQL 8.0, runs every file in `init/` on the first start | `localhost:3307` (database `mims_db`, root password `rootpassword`) |
+| `seed` | one-time helper that creates the 100 sample transactions, then exits | |
+| `backend` | Express API | http://localhost:4000 |
+| `frontend` | React app (Vite dev server) | http://localhost:5173 |
+
+To run only the database and the sample transactions:
+
+```bash
+docker compose up -d db seed
+```
+
+Check that nothing failed during the first start. The command must print nothing:
 
 ```bash
 docker logs mims_db 2>&1 | grep ERROR
 ```
 
-The command must print nothing.
-
-The database is then available on `localhost:3307`, database name `mims_db`, root password `rootpassword`:
+Open the database:
 
 ```bash
 docker compose exec db mysql -uroot -prootpassword mims_db
-```
-
-The CSV files contain no transactions. Create the 100 sample transactions once, after the first start:
-
-```bash
-docker compose exec db mysql -uroot -prootpassword mims_db -e "CALL sp_seed_sample_transactions(100);"
 ```
 
 To start again from an empty database:
 
 ```bash
 docker compose down -v
-docker compose up -d
+docker compose up -d --build
 ```
 
-The compose file passes `--secure-file-priv=/docker-entrypoint-initdb.d` so that `LOAD DATA INFILE` in step 06 can read the CSV files from `init/data/`. Writing `--secure-file-priv=""` in a compose list passes two literal quote characters and the load fails with error 1290.
+The compose file passes `--secure-file-priv=/docker-entrypoint-initdb.d` so that `LOAD DATA INFILE` in step 06 can read the CSV files from `init/data/`. Writing `--secure-file-priv=""` in a compose list passes two literal quote characters and the load fails with error 1290. It also passes `--skip-log-bin`: with the binary log on, MySQL refuses to create the stored functions unless they carry `DETERMINISTIC` or data-access labels.
 
 ## Sample data
 
@@ -81,7 +96,48 @@ The sample transactions come from a procedure and not from a CSV file because ev
 
 ## Demo logins
 
-Every seeded admin, agent and customer uses the demo password `password123`. It is for development only. Usernames follow `firstname.lastname`, for example `nimal.perera` (agent) and `anura.fernando` (customer). The demo administrator is `admin.demo`.
+Live site: https://btrust-mims-xyz.centralindia.cloudapp.azure.com
+Local: http://localhost:5173
+
+Every seeded login uses the same demo password: `password123`. It is for demo data only; the data files hold just its bcrypt hash. Deposits and withdrawals only work from 09:00 to 17:00 Sri Lanka time.
+
+| Role | Username | Password |
+|---|---|---|
+| Administrator | `admin.demo` | `password123` |
+
+Agents:
+
+| Username | Name | Branch |
+|---|---|---|
+| `nimal.perera` | Nimal Perera | Colombo Main Branch |
+| `kamala.silva` | Kamala Silva | Colombo Main Branch |
+| `sunil.bandara` | Sunil Bandara | Kandy Branch |
+| `priya.rajapaksa` | Priya Rajapaksa | Kandy Branch |
+| `kumar.selvam` | Kumar Selvam | Jaffna Branch |
+
+All agents use the password `password123`.
+
+Customers:
+
+| Username | Name | Agent | Account | Plan |
+|---|---|---|---|---|
+| `anura.fernando` | Anura Fernando | nimal.perera | SA00000001 | Adult |
+| `dilani.wick` | Dilani Wickramasinghe | nimal.perera | SA00000002 | Adult |
+| `somasiri.g` | Somasiri Gunawardena | kamala.silva | SA00000003 | Senior |
+| `tharindu.j` | Tharindu Jayasuriya | kamala.silva | SA00000004 | Teen |
+| `sithumini.p` | Sithumini Perera | sunil.bandara | SA00000005 | Children |
+| `ruwan.k` | Ruwan Karunaratne | sunil.bandara | SA00000006 | Adult |
+| `chamara.r` | Chamara Rathnayake | priya.rajapaksa | SA00000007 (joint, primary) | Joint |
+| `ishara.desilva` | Ishara De Silva | kumar.selvam | SA00000007 (joint, secondary) | Joint |
+| `priyantha.w` | Priyantha Wijesekara | nimal.perera | SA00000008 | Senior |
+| `nadeeka.a` | Nadeeka Abeysinghe | kamala.silva | SA00000009 | Adult |
+| `kavindu.s` | Kavindu Senanayake | sunil.bandara | SA00000010 | Teen |
+| `malithi.g` | Malithi Gunasekara | priya.rajapaksa | SA00000011 (joint, primary) | Joint |
+| `vishwa.b` | Vishwa Balasubramaniam | kumar.selvam | SA00000011 (joint, secondary) | Joint |
+| `sanduni.r` | Sanduni Rodrigo | nimal.perera | SA00000012 | Children |
+| `buddhika.e` | Buddhika Ekanayake | kamala.silva | SA00000013 | Adult |
+
+All customers use the password `password123`. An agent only sees their own customers, and a customer only sees their own accounts.
 
 ## Database accounts
 
@@ -95,17 +151,23 @@ Every seeded admin, agent and customer uses the demo password `password123`. It 
 
 ## Deploying
 
-Production runs on one Azure virtual machine with `docker-compose.prod.yml`: Caddy (HTTPS, `/api` to the backend), MySQL, a one-time seeder, the backend and the frontend. The images come from ghcr.io.
+Production runs on one Azure virtual machine with `docker-compose.prod.yml`: Caddy (HTTPS, `/api` to the backend), MySQL, a one-time seeder, the backend and the frontend. The images come from ghcr.io. The site is at https://btrust-mims-xyz.centralindia.cloudapp.azure.com.
 
-On the server, create `/opt/mims/.env` from `deploy/.env.example` and fill in the domain, the GitHub owner, the four database passwords and `JWT_SECRET`. The production compose file refuses to start when one is missing. Then:
+On the server, `/opt/mims/.env` (created from `deploy/.env.example`, never committed) holds the domain, the GitHub owner, the four database passwords and `JWT_SECRET`. The production compose file refuses to start when one is missing.
 
-```bash
-docker compose -f docker-compose.prod.yml up -d
-```
+How a change reaches the server:
 
-- MySQL runs `init/` only on an empty data volume. A change to a database script on an existing server needs a manual migration, or `docker compose -f docker-compose.prod.yml down -v` and a new start, which deletes the data.
-- The event scheduler is switched on by the compose file, so `ev_daily_interest_credit` runs every day.
-- Pushing to `main` runs `.github/workflows/deploy.yml`, which copies `docker-compose.prod.yml`, `deploy/` and `init/` to the server. The backend and frontend repositories deploy their own images.
+| You push to `main` in | What happens |
+|---|---|
+| BTrust_MIMS-Backend | tests, builds the image (tagged `latest` and with the commit id), pushes it to ghcr.io, runs `docker compose pull backend` and `up -d` on the server |
+| BTrust-MIMS-Frontend | the same for the frontend image |
+| BTrust-MIMS-DB (compose file, `deploy/`, `init/`) | copies those files to `/opt/mims` and runs `docker compose up -d` |
+
+Every deployment ends by calling `/api/health` on the public address for up to five minutes; if the site does not answer, the run turns red. The commands on the server run under a lock, so two deployments never overlap.
+
+**Database changes need the Reset button.** MySQL runs the files in `init/` only when the data volume is empty, so a push that changes a table, trigger, procedure or CSV file is copied to the server but not applied to the existing database. To apply it (and to restore the demo data), open the Actions tab of this repository, choose **Reset database**, click **Run workflow** and type `RESET`. It deletes all data, rebuilds the database from `init/` with the sample data, and checks the site. From a terminal: `gh workflow run reset-database.yml -f confirm=RESET`.
+
+The event scheduler is switched on by the compose file, so `ev_daily_interest_credit` runs every day at 01:00 server time (06:30 Sri Lanka time).
 
 ## Business rules enforced in the database
 
@@ -126,3 +188,17 @@ docker compose -f docker-compose.prod.yml up -d
 | Reports read only the report views | `09_reports.sql` |
 
 Checked by the application and not by the database: age limits per plan, and setting an account to DORMANT.
+
+## Team and contributions
+
+Group 28, In24-S3-CS3043 Database Systems.
+
+| Member | Database | Backend | Frontend |
+|---|---|---|---|
+| Perera K.D.B.M. (Binuka) | the stored procedures and functions (`03_procedures.sql`): deposit, withdraw, open FD, close FD early; the admin audit triggers (`08_admin_audit.sql`); the report views (`09_reports.sql`); the MySQL accounts and their rights (`10_users.sh`, `11_grants.sql`); the Docker compose files, Azure hosting and the deployment workflows | Dockerfile, deployment workflow | Dockerfile, production image, deployment workflow |
+| Ranathunga N.R.A.K.H.K. | the schema (`01_schema.sql`): tables, keys, indexes and constraints | authentication and roles, login, branches, agents, audit log | routing, layout, branch, agent, audit log and transaction history pages |
+| Jackson J.W. | the triggers (`02_triggers.sql`) and the reference data (`05_reference_data.sql`) | customers, accounts, shared utilities | theme, base components, login, customer registration, open account |
+| Pranav M.A. | the interest procedures and the daily event (`04_interest_and_events.sql`) | setup, database service, deposits and withdrawals, fixed deposits, plan lookups, server entry | setup, API client, deposit and withdraw, fixed deposits, customer dashboard |
+| Isiwara M.A.G.A. | the sample data loader and the transaction seeder (`06_load_sample_data.sql`, `07_generate_transactions.sql`); review of the database scripts | report endpoints, CSV and PDF export, error handler, smoke test | data table, report pages, export buttons |
+
+The exact backend and frontend files per person are listed in the READMEs of those repositories.

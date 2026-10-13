@@ -29,4 +29,19 @@ jobs:
 
       - name: Apply
         run: |
-          ssh "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" "cd /opt/mims && tar xzf stack.tgz && rm stack.tgz && docker compose -f docker-compose.prod.yml up -d"
+          ssh "${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}" 'bash -s' <<'EOF'
+          set -e
+          cd /opt/mims
+          sudo chown -R "$(id -un)":"$(id -gn)" init deploy
+          flock /tmp/mims-deploy.lock sh -c 'tar xzf stack.tgz && rm stack.tgz && docker compose -f docker-compose.prod.yml up -d'
+          EOF
+
+      - name: Check the site
+        run: |
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 "https://${{ secrets.VM_HOST }}/api/health" || true)
+            if [ "$code" = "200" ]; then echo "site is healthy"; exit 0; fi
+            sleep 10
+          done
+          echo "site did not become healthy"
+          exit 1
