@@ -19,6 +19,7 @@ services:
     command:
       - --local-infile=1
       - --secure-file-priv=/docker-entrypoint-initdb.d
+      - --skip-log-bin
     healthcheck:
       test: ["CMD-SHELL", "mysql -h127.0.0.1 -umims_app -p$$MIMS_APP_PASSWORD mims_db -e 'SELECT 1 FROM savings_plan LIMIT 1' >/dev/null 2>&1"]
       interval: 5s
