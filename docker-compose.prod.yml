@@ -29,18 +29,18 @@ services:
       MIMS_REPORTS_PASSWORD: ${MIMS_REPORTS_PASSWORD:?set it in .env}
     volumes:
       - mims_db_data:/var/lib/mysql
-      - ./init/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
-      - ./init/02_triggers.sql:/docker-entrypoint-initdb.d/02_triggers.sql:ro
-      - ./init/03_procedures.sql:/docker-entrypoint-initdb.d/03_procedures.sql:ro
-      - ./init/04_interest_and_events.sql:/docker-entrypoint-initdb.d/04_interest_and_events.sql:ro
-      - ./init/05_reference_data.sql:/docker-entrypoint-initdb.d/05_reference_data.sql:ro
-      - ./init/06_load_sample_data.sql:/docker-entrypoint-initdb.d/06_load_sample_data.sql:ro
-      - ./init/07_generate_transactions.sql:/docker-entrypoint-initdb.d/07_generate_transactions.sql:ro
-      - ./init/08_admin_audit.sql:/docker-entrypoint-initdb.d/08_admin_audit.sql:ro
-      - ./init/09_reports.sql:/docker-entrypoint-initdb.d/09_reports.sql:ro
-      - ./init/10_users.sh:/docker-entrypoint-initdb.d/10_users.sh:ro
-      - ./init/11_grants.sql:/docker-entrypoint-initdb.d/11_grants.sql:ro
-      - ./init/data:/docker-entrypoint-initdb.d/data:ro
+      - ./init/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./init/02_triggers.sql:/docker-entrypoint-initdb.d/02_triggers.sql
+      - ./init/03_procedures.sql:/docker-entrypoint-initdb.d/03_procedures.sql
+      - ./init/04_interest_and_events.sql:/docker-entrypoint-initdb.d/04_interest_and_events.sql
+      - ./init/05_reference_data.sql:/docker-entrypoint-initdb.d/05_reference_data.sql
+      - ./init/06_load_sample_data.sql:/docker-entrypoint-initdb.d/06_load_sample_data.sql
+      - ./init/07_generate_transactions.sql:/docker-entrypoint-initdb.d/07_generate_transactions.sql
+      - ./init/08_admin_audit.sql:/docker-entrypoint-initdb.d/08_admin_audit.sql
+      - ./init/09_reports.sql:/docker-entrypoint-initdb.d/09_reports.sql
+      - ./init/10_users.sh:/docker-entrypoint-initdb.d/10_users.sh
+      - ./init/11_grants.sql:/docker-entrypoint-initdb.d/11_grants.sql
+      - ./init/data:/docker-entrypoint-initdb.d/data
     command:
       - --local-infile=1
       - --secure-file-priv=/docker-entrypoint-initdb.d
