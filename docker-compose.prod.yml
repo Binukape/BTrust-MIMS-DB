@@ -1,0 +1,107 @@
+name: btrust-mims
+
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?set it in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+  db:
+    image: mysql:8.0
+    container_name: mims_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set it in .env}
+      MYSQL_DATABASE: mims_db
+      MIMS_OWNER_PASSWORD: ${MIMS_OWNER_PASSWORD:?set it in .env}
+      MIMS_APP_PASSWORD: ${MIMS_APP_PASSWORD:?set it in .env}
+      MIMS_REPORTS_PASSWORD: ${MIMS_REPORTS_PASSWORD:?set it in .env}
+    volumes:
+      - mims_db_data:/var/lib/mysql
+      - ./init/01_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./init/02_triggers.sql:/docker-entrypoint-initdb.d/02_triggers.sql:ro
+      - ./init/03_procedures.sql:/docker-entrypoint-initdb.d/03_procedures.sql:ro
+      - ./init/04_interest_and_events.sql:/docker-entrypoint-initdb.d/04_interest_and_events.sql:ro
+      - ./init/05_reference_data.sql:/docker-entrypoint-initdb.d/05_reference_data.sql:ro
+      - ./init/06_load_sample_data.sql:/docker-entrypoint-initdb.d/06_load_sample_data.sql:ro
+      - ./init/07_generate_transactions.sql:/docker-entrypoint-initdb.d/07_generate_transactions.sql:ro
+      - ./init/08_admin_audit.sql:/docker-entrypoint-initdb.d/08_admin_audit.sql:ro
+      - ./init/09_reports.sql:/docker-entrypoint-initdb.d/09_reports.sql:ro
+      - ./init/10_users.sh:/docker-entrypoint-initdb.d/10_users.sh:ro
+      - ./init/11_grants.sql:/docker-entrypoint-initdb.d/11_grants.sql:ro
+      - ./init/data:/docker-entrypoint-initdb.d/data:ro
+    command:
+      - --local-infile=1
+      - --secure-file-priv=/docker-entrypoint-initdb.d
+      - --event-scheduler=ON
+    healthcheck:
+      test: ["CMD-SHELL", "mysql -h127.0.0.1 -umims_app -p$$MIMS_APP_PASSWORD mims_db -e 'SELECT 1 FROM savings_plan LIMIT 1' >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 40
+      start_period: 30s
+
+  seed:
+    image: mysql:8.0
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set it in .env}
+    command:
+      - sh
+      - -c
+      - >
+        n=$$(mysql -h db -uroot -p"$$MYSQL_ROOT_PASSWORD" mims_db -N -s -e "SELECT COUNT(*) FROM transaction" 2>/dev/null);
+        if [ "$$n" = "0" ]; then
+        mysql -h db -uroot -p"$$MYSQL_ROOT_PASSWORD" mims_db -e "CALL sp_seed_sample_transactions(100)" 2>/dev/null && echo "seeded 100 sample transactions";
+        else echo "transactions already present ($$n)"; fi
+
+  backend:
+    image: ghcr.io/${GH_OWNER}/btrust-mims-backend:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+    environment:
+      PORT: "4000"
+      NODE_ENV: production
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: mims_db
+      DB_USER: mims_app
+      DB_PASSWORD: ${MIMS_APP_PASSWORD:?set it in .env}
+      REPORTS_DB_USER: mims_reports
+      REPORTS_DB_PASSWORD: ${MIMS_REPORTS_PASSWORD:?set it in .env}
+      JWT_SECRET: ${JWT_SECRET:?set it in .env}
+      JWT_EXPIRES_IN: 8h
+      ALLOWED_ORIGIN: https://${DOMAIN:?set it in .env}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+  frontend:
+    image: ghcr.io/${GH_OWNER}/btrust-mims-frontend:latest
+    restart: unless-stopped
+
+volumes:
+  mims_db_data:
+  caddy_data:
+  caddy_config:

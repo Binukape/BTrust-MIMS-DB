@@ -23,7 +23,7 @@ BTrust-MIMS-DB/
     ├── 07_generate_transactions.sql   sp_seed_sample_transactions()
     ├── 08_admin_audit.sql             audit triggers for admin changes
     ├── 09_reports.sql                 the report views
-    ├── 10_users_dev.sql               the three MySQL accounts with dev passwords (local only)
+    ├── 10_users.sh                    creates the three MySQL accounts (passwords from environment variables)
     ├── 11_grants.sql                  permissions for those accounts, no passwords
     └── data/                          admins, branches, agents, customers, savings_accounts,
                                        account_holders, fixed_deposits (CSV)
@@ -91,9 +91,9 @@ Every seeded admin, agent and customer uses the demo password `password123`. It 
 | `mims_app` | the backend | read all tables; EXECUTE on `sp_deposit`, `sp_withdraw`, `sp_open_fd`, `sp_close_fd_early`; manage branches, agents, customers and accounts; update only `savings_account.status`. No write on `transaction` or on any balance, no DROP. |
 | `mims_reports` | report queries | SELECT on the report views only |
 
-Locally, `10_users_dev.sql` creates them with dev passwords (`dev_owner_pw`, `dev_app_pw`, `dev_reports_pw`) and `11_grants.sql` sets the permissions. These passwords are for local use only.
+`10_users.sh` creates them from the environment variables `MIMS_OWNER_PASSWORD`, `MIMS_APP_PASSWORD` and `MIMS_REPORTS_PASSWORD`, and `11_grants.sql` sets the permissions. Locally, when the variables are not set, the dev passwords `dev_owner_pw`, `dev_app_pw` and `dev_reports_pw` are used. These are for local use only; on a server always set real values.
 
-On Aiven the dev passwords do not exist. Create the three users in the Aiven console with real passwords, keep those passwords out of the repository, and let `build.sql` run `11_grants.sql`. `build.sql` does not run `10_users_dev.sql`.
+On Aiven the dev passwords do not exist. Create the three users in the Aiven console with real passwords, keep those passwords out of the repository, and let `build.sql` run `11_grants.sql`. `build.sql` does not run `10_users.sh`.
 
 ## Deploying to Aiven
 

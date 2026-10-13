@@ -1,13 +1,4 @@
-# =====================================================================
-# B-Trust MIMS - Local Development Docker Compose
-# Currently runs MySQL only (DEV-6). All /init SQL scripts are mounted
-# to /docker-entrypoint-initdb.d, so on first container start against
-# an empty data volume, MySQL runs them automatically in filename
-# order: 01_schema -> 02_triggers -> 03_procedures ->
-# 04_interest_and_events -> 05_reference_data -> 06_load_sample_data ->
-# 07_generate_transactions.
-#
-# =====================================================================
+name: btrust-mims
 
 services:
   db:
@@ -17,29 +8,83 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: mims_db
+      MIMS_OWNER_PASSWORD: ${MIMS_OWNER_PASSWORD:-dev_owner_pw}
+      MIMS_APP_PASSWORD: ${MIMS_APP_PASSWORD:-dev_app_pw}
+      MIMS_REPORTS_PASSWORD: ${MIMS_REPORTS_PASSWORD:-dev_reports_pw}
     ports:
-      - "3307:3306"
+      - "${DB_HOST_PORT:-3307}:3306"
     volumes:
       - mims_db_data:/var/lib/mysql
       - ./init:/docker-entrypoint-initdb.d
     command:
-      # local_infile must be ON for LOAD DATA INFILE in 06_load_sample_data.sql
       - --local-infile=1
       - --secure-file-priv=/docker-entrypoint-initdb.d
     healthcheck:
-      test:
-        [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost",
-          "-uroot",
-          "-prootpassword",
-        ]
+      test: ["CMD-SHELL", "mysql -h127.0.0.1 -umims_app -p$$MIMS_APP_PASSWORD mims_db -e 'SELECT 1 FROM savings_plan LIMIT 1' >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+
+  seed:
+    image: mysql:8.0
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - sh
+      - -c
+      - >
+        n=$$(mysql -h db -uroot -prootpassword mims_db -N -s -e "SELECT COUNT(*) FROM transaction" 2>/dev/null);
+        if [ "$$n" = "0" ]; then
+        mysql -h db -uroot -prootpassword mims_db -e "CALL sp_seed_sample_transactions(100)" 2>/dev/null && echo "seeded 100 sample transactions";
+        else echo "transactions already present ($$n)"; fi
+
+  backend:
+    build: ../BTrust_MIMS-Backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+    environment:
+      PORT: "4000"
+      NODE_ENV: development
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: mims_db
+      DB_USER: mims_app
+      DB_PASSWORD: ${MIMS_APP_PASSWORD:-dev_app_pw}
+      REPORTS_DB_USER: mims_reports
+      REPORTS_DB_PASSWORD: ${MIMS_REPORTS_PASSWORD:-dev_reports_pw}
+      JWT_SECRET: dev_only_secret_change_before_hosting
+      JWT_EXPIRES_IN: 8h
+      ALLOWED_ORIGIN: http://localhost:5173
+    ports:
+      - "4000:4000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 6
+      start_period: 5s
+
+  frontend:
+    build: ../BTrust-MIMS-Frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      VITE_API_URL: http://localhost:4000
+      VITE_USE_POLLING: "true"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../BTrust-MIMS-Frontend/src:/app/src
+      - ../BTrust-MIMS-Frontend/index.html:/app/index.html
 
 volumes:
   mims_db_data:
