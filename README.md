@@ -193,12 +193,12 @@ Checked by the application and not by the database: age limits per plan, and set
 
 Group 28, In24-S3-CS3043 Database Systems.
 
-| Member | Database | Backend | Frontend |
-|---|---|---|---|
-| Perera K.D.B.M. (Binuka) | the stored procedures and functions (`03_procedures.sql`): deposit, withdraw, open FD, close FD early; the admin audit triggers (`08_admin_audit.sql`); the report views (`09_reports.sql`); the MySQL accounts and their rights (`10_users.sh`, `11_grants.sql`); the Docker compose files, Azure hosting and the deployment workflows | Dockerfile, deployment workflow | Dockerfile, production image, deployment workflow |
-| Ranathunga N.R.A.K.H.K. | the schema (`01_schema.sql`): tables, keys, indexes and constraints | authentication and roles, login, branches, agents, audit log | routing, layout, branch, agent, audit log and transaction history pages |
-| Jackson J.W. | the triggers (`02_triggers.sql`) and the reference data (`05_reference_data.sql`) | customers, accounts, shared utilities | theme, base components, login, customer registration, open account |
-| Pranav M.A. | the interest procedures and the daily event (`04_interest_and_events.sql`) | setup, database service, deposits and withdrawals, fixed deposits, plan lookups, server entry | setup, API client, deposit and withdraw, fixed deposits, customer dashboard |
-| Isiwara M.A.G.A. | the sample data loader and the transaction seeder (`06_load_sample_data.sql`, `07_generate_transactions.sql`); review of the database scripts | report endpoints, CSV and PDF export, error handler, smoke test | data table, report pages, export buttons |
+| Member | Handled |
+|---|---|
+| Perera K.D.B.M. (Binuka) | System architecture, the money procedures and functions, the report views, the MySQL accounts and their rights, Docker, Azure hosting and CI/CD |
+| Ranathunga N.R.A.K.H.K. | The database schema, login and authentication, access control, and the admin portal with the audit log |
+| Jackson J.W. | The triggers, the reference data, customer registration and account opening |
+| Pranav M.A. | Deposits and withdrawals, fixed deposits, and the nightly interest procedures and event |
+| Isiwara M.A.G.A. | Reports and exports, the sample data and transaction seeder, and testing |
 
-The exact backend and frontend files per person are listed in the READMEs of those repositories.
+The files each member wrote are listed in the READMEs of the backend and frontend repositories.
